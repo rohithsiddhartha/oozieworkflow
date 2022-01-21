@@ -1,0 +1,78 @@
+<?xml version="1.0" standalone="no"?><!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+--><workflow-app xmlns="uri:oozie:workflow:0.4" name="sub-shell-wf">
+    <start to="sub-shell-node"/>
+    <action name="sub-shell-node">
+        <shell xmlns="uri:oozie:shell-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+            <exec>echo</exec>
+	    <argument>${nodeCO}</argument>
+            <capture-output/>
+        </shell>
+        <ok to="sub-check-output"/>
+        <error to="sub-fail"/>
+    </action>
+    <decision name="sub-check-output">
+        <switch>
+            <case to="sub-sendEmail">
+                ${wf:actionData(&apos;shell-node&apos;)[&apos;my_output&apos;] eq &apos;HelloOozie&apos;}
+	    </case>
+            <case to="sub-sendEmail-1">
+		    ${nodeCO gt 0}
+	    </case>	    
+            <default to="sub-fail-decision"/>
+        </switch>
+    </decision>
+    <action name="sub-sendEmail">
+        <email xmlns="uri:oozie:email-action:0.1">
+              <to>${emailToAddress}</to>
+              <subject>OUTPUT of SUCCESSFULL SUB-WORKFLOW </subject>
+              <body>
+              SUBWORKFLOW successful 
+	      Results of file action in hdfs: 
+	      </body>
+        </email>
+        <ok to="end"/>
+        <error to="end"/>
+    </action>
+    <action name="sub-sendEmail-1">
+        <email xmlns="uri:oozie:email-action:0.1">
+              <to>${emailToAddress}</to>
+              <subject>OUTPUT of SUCCESSFULL SUB-WORKFLOW SENDEMAIL1 DECISION ON WORKFLOW OUTPUT</subject>
+              <body>
+              SUBWORKFLOW successful
+              Results of file action in hdfs:
+              </body>
+        </email>
+        <ok to="end"/>
+        <error to="end"/>
+    </action>
+    <kill name="sub-fail">
+        <message>Shell action failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+    </kill>
+    <kill name="sub-fail-decision">
+        <message>Incorrect output, expected [Hello Oozie] but was [${wf:actionData(&apos;shell-node&apos;)[&apos;my_output&apos;]}]</message>
+    </kill>
+    <end name="end"/>
+</workflow-app>

@@ -1,0 +1,98 @@
+<?xml version="1.0" standalone="no"?><workflow-app xmlns="uri:oozie:workflow:0.5" name="shell-wf">
+    <start to="shell-node"/>
+    <action name="shell-node">
+        <shell xmlns="uri:oozie:shell-action:0.3">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                  <name>mapred.job.queue.name</name>
+                  <value>${queueName}</value>
+                </property>
+            </configuration>
+            <exec>script.sh</exec>
+            <argument>${countFilePath}</argument>
+            <file>gs://rohith/e2e_gs_workflow/script.sh#script.sh</file>
+            <capture-output/>
+        </shell>
+        <ok to="check-output"/>
+        <error to="fail"/>
+    </action>
+    <decision name="check-output">
+        <switch>
+            <case to="decision-to-run-subworkflow">
+                ${wf:actionData(&apos;shell-node&apos;)[&apos;NumberofLines&apos;] gt 0}
+            </case>
+            <default to="fail-output"/>
+        </switch>
+    </decision>
+
+    <decision name="decision-to-run-subworkflow">
+        <switch>
+            <case to="sub-action">${runSubWorkFlow eq &apos;yes&apos;}</case>
+            <case to="sendEmail">${runSubWorkFlow eq &apos;no&apos;}</case>
+            <default to="fail-output"/>
+        </switch>
+    </decision>
+    <action name="sub-action">
+        <sub-workflow>
+            <app-path>gs://rohith/e2e_gs_workflow/subworkflow.xml</app-path>
+  <propagate-configuration/>
+   <configuration>
+    <property>
+               <name>nodeCO</name>
+               <value>${wf:actionData(&apos;shell-node&apos;)[&apos;NumberofLines&apos;]}</value>
+    </property>
+            </configuration>
+        </sub-workflow>
+    <ok to="spark-docker"/>
+    <error to="fail"/>
+    </action>
+    <action name="spark-docker">
+    <spark xmlns="uri:oozie:spark-action:0.2">
+    <job-tracker>${jobTracker}</job-tracker>
+    <name-node>${nameNode}</name-node>
+    <master>${master}</master>
+    <mode>${mode}</mode>
+    <name>Python-Spark-Pi-Docker</name>
+    <jar>gs://rohith/spark_test/main.py</jar>
+    <spark-opts>--queue ${queueName} --executor-memory 1G --driver-memory 1G --conf &quot;spark.executorEnv.YARN_CONTAINER_RUNTIME_TYPE=docker&quot; --conf &quot;spark.executorEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE=${IMAGE_ID}&quot; --conf &quot;spark.executorEnv.YARN_CONTAINER_RUNTIME_DOCKER_MOUNTS=${MOUNTS}&quot; --conf &quot;spark.yarn.appMasterEnv.YARN_CONTAINER_RUNTIME_TYPE=docker&quot; --conf &quot;spark.yarn.appMasterEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE=${IMAGE_ID}&quot; --conf &quot;spark.yarn.appMasterEnv.YARN_CONTAINER_RUNTIME_DOCKER_MOUNTS=${MOUNTS}&quot; </spark-opts>
+    </spark>
+    <ok to="sendEmail"/>
+    <error to="fail"/>
+    </action>
+
+
+    <action name="sendEmail">
+        <email xmlns="uri:oozie:email-action:0.1">
+              <to>${emailToAddress}</to>
+              <subject>Output of workflow ${wf:id()}</subject>
+              <body>Number of files in  hdfs path ${countFilePath}: ${wf:actionData(&apos;shell-node&apos;)[&apos;NumberofLines&apos;]}</body>
+        </email>
+        <ok to="hiveAction"/>
+        <error to="fail"/>
+    </action>
+    <action name="hiveAction">
+                <hive2 xmlns="uri:oozie:hive2-action:1.0">
+                        <resource-manager>${resourceManager}</resource-manager>
+                        <name-node>${nameNode}</name-node>
+                <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+          </configuration>
+                        <jdbc-url>${jdbcURL}</jdbc-url>
+                        <script>${appPath}/hivedb.hql</script>
+                  </hive2>
+                <ok to="end"/>
+                <error to="fail"/>
+        </action>
+    <kill name="fail">
+        <message>Shell action failed and kiiled due to, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+    </kill>
+    <kill name="fail-output">
+        <message>Incorrect output, expected greater than 0 but was [${wf:actionData(&apos;shell-node&apos;)[&apos;NumberofLines&apos;]}]</message>
+    </kill>
+    <end name="end"/>
+</workflow-app>

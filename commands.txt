@@ -1,0 +1,57 @@
+oozie job -oozie http://0.0.0.0:11000/oozie -config job.properties -run
+
+oozie job -oozie http://0.0.0.0:11000/oozie -config /user/rohith/examples/apps/test_2/job.properties -run
+
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000000-211221154740645-oozie-oozi-W
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000001-211221154740645-oozie-oozi-W
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000002-211221154740645-oozie-oozi-W
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000003-211221154740645-oozie-oozi-W
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000004-211221154740645-oozie-oozi-W
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000005-211221154740645-oozie-oozi-W
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000006-211221154740645-oozie-oozi-W
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000031-211221154740645-oozie-oozi-W
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000009-211223070206296-oozie-oozi-W
+
+
+oozie job -oozie http://0.0.0.0:11000/oozie -info 0000002-211222111759538-oozie-oozi-W
+
+py vizoozie/vizoozie.py 'C:\Users\rohith.s.bheemreddy\Downloads\V-PoC\XMLtoairflow\oozietesting\subworkflow\workflow.xml' 'C:\Users\rohith.s.bheemreddy\Downloads\V-PoC\XMLtoairflow\oozietesting\subworkflow\workflow.dot'
+
+oozie job -oozie http://0.0.0.0:11000/oozie -log 0000029-211221154740645-oozie-oozi-W
+
+hdfs dfs -ls /user/rohithsiddhartha22
+
+yarn logs -applicationId application_1640101651579_0030
+
+job 28
+yarn logs -applicationId application_1640101651579_0024
+Exception in thread main
+
+job 27
+yarn logs -applicationId application_1640101651579_0020 
+Exception in thread main
+
+gcloud dataproc clusters create ooziegatewaycheck --region asia-southeast1 \
+    --enable-component-gateway \
+    --properties='yarn:yarn.resourcemanager.webapp.methods-allowed=GET,POST,DELETE' \
+    --zone asia-southeast1-a \
+    --master-machine-type n1-standard-2 \
+    --master-boot-disk-size 70 \
+    --num-workers 2 \
+    --worker-machine-type n1-standard-2 \
+    --worker-boot-disk-size 50 --image-version 2.0.27-ubuntu18 --optional-components JUPYTER,DOCKER \
+    --project ooziepoc0712 \
+    --initialization-actions="gs://goog-dataproc-initialization-actions-asia-southeast1/oozie/oozie.sh"
+
+gcloud dataproc clusters create ooziegatewaycheck --region asia-southeast1 \
+    --enable-component-gateway \
+    --subnet default --zone asia-southeast1-a \
+    --master-machine-type n1-standard-2 \
+    --master-boot-disk-size 70 \
+    --num-workers 2 \
+    --worker-machine-type n1-standard-2 \
+    --worker-boot-disk-size 30 \
+    --image-version 2.0.27-ubuntu18 \
+    --optional-components JUPYTER,DOCKER \
+    --initialization-actions="gs://goog-dataproc-initialization-actions-asia-southeast1/oozie/oozie.sh" \
+    --project ooziepoc0712
